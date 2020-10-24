@@ -22,7 +22,7 @@ try {
   // Update configdir
   CONFIGDIR = dirname(configPath);
 
-  console.log(`PostCSS config detected at ${CONFIGDIR}`);
+  console.log(`[postcss-generate] Config file detected at ${CONFIGDIR}`);
 
   // Function callback
   if (typeof configFile === 'function') {
@@ -74,13 +74,13 @@ async function transform(processor, src) {
   // Only write resulting files, do not concatenating (no outfile specified)
   if (!CONFIG.generate.outfile) {
     await fs.writeFile(cd(pOpts.to), result.css);
-    if (DEBUG) console.log(`[postcss-generate] CSS out: ${cd(pOpts.to)}`);
+    if (DEBUG) console.log(`[postcss-generate] CSS output: ${cd(pOpts.to)}`);
 
 
 
     if (result.map) {
       await fs.writeFile(cd(`${pOpts.to}.map`), concatenated.map);
-      if (DEBUG) console.log(`[postcss-generate] Mapfile out: ${cd(pOpts.to+'.map')}`);
+      if (DEBUG) console.log(`[postcss-generate] Mapfile output: ${cd(pOpts.to+'.map')}`);
     }
   }
 
@@ -120,29 +120,34 @@ async function concat(results, outfile, opts = {}) {
 
   // Transform source and write resulting CSS
   await fs.writeFile(cd(outfile), concatenated.css);
-  if (DEBUG) console.log(`[postcss-generate] CSS (concat) out: ${cd(outfile)}`);
+  if (DEBUG) console.log(`[postcss-generate] CSS (concat) output: ${cd(outfile)}`);
 
   await fs.writeFile(cd(`${outfile}.map`), concatenated.map);
-  if (DEBUG) console.log(`[postcss-generate] Mapfile out: ${cd(outfile+'.map')}`);
+  if (DEBUG) console.log(`[postcss-generate] Mapfile output: ${cd(outfile+'.map')}`);
 
   return concatenated;
 }
 
-module.exports = async function run() {
-  // Create a processor by using the plugins from the config file
-  const processor = postcss(CONFIG.plugins);
+module.exports = {
+  config() {
+    return CONFIG;
+  },
+  async run() {
+    // Create a processor by using the plugins from the config file
+    const processor = postcss(CONFIG.plugins);
 
-  // Process source files
-  let results = await Promise.all(
-    CONFIG.generate.from.map(
-      sourceFile => transform(processor, sourceFile)
-    )
-  );
+    // Process source files
+    let results = await Promise.all(
+      CONFIG.generate.from.map(
+        sourceFile => transform(processor, sourceFile)
+      )
+    );
 
-  // Concatenate all sources into a single source-mapped outfile
-  let concatresult = await concat(results, CONFIG.generate.outfile, {
-    header: CONFIG.generate.header,
-  });
+    // Concatenate all sources into a single source-mapped outfile
+    let concatresult = await concat(results, CONFIG.generate.outfile, {
+      header: CONFIG.generate.header,
+    });
 
-  console.log(`[postcss-generate] Updated CSS build.`);
+    console.log(`[postcss-generate] Updated CSS build.`);
+  }
 };

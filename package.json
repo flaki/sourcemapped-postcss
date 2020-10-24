@@ -1,6 +1,6 @@
 {
   "name": "eleventy-plugin-sourcemapped-postcss",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Straightforward PostCSS runner for 11ty with sourcemapping support",
   "main": ".eleventy.js",
   "scripts": {
