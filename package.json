@@ -1,8 +1,8 @@
 {
-  "name": "eleventy-plugin-sourcemapped-postcss",
-  "version": "0.0.3",
-  "description": "Straightforward PostCSS runner for 11ty with sourcemapping support",
-  "main": ".eleventy.js",
+  "name": "sourcemapped-postcss",
+  "version": "0.0.4",
+  "description": "Straightforward PostCSS runner with sourcemapping support",
+  "main": "./src/main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -26,12 +26,14 @@
   "author": "Flaki <git@flaki.hu>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/flaki/eleventy-plugin-sourcemapped-postcss/issues"
+    "url": "https://github.com/flaki/sourcemapped-postcss/issues"
   },
-  "homepage": "https://github.com/flaki/eleventy-plugin-sourcemapped-postcss#readme",
+  "homepage": "https://github.com/flaki/sourcemapped-postcss#readme",
   "dependencies": {
     "concat-with-sourcemaps": "^1.1.0",
+    "cssnano": "^4.1.10",
     "fs-extra": "^9.0.1",
+    "globby": "^11.0.1",
     "postcss": "^8.1.3"
   }
 }

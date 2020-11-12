@@ -5,47 +5,58 @@ const sourcemapConcat = require('concat-with-sourcemaps');
 const fs = require('fs-extra');
 const { dirname, basename, resolve } = require('path');
 
+const globby = require('globby');
+
+
+const MINIFY = true && !(
+  process.env.POSTCSS_NOMINIFY || process.env.DEVELOP || process.env.DEBUG == '*');
+  
 const DEBUG = process.env.DEBUG;
 
 let CONFIG, CONFIGDIR;
 
+
 // Convenience function for resolving relative references to the config directory
 // This will keep absolute paths intact
-let cd = (path) => resolve(CONFIGDIR, path);
+function cd(path) {
+  return resolve(CONFIGDIR, path);
+}
 
-// Throws if no config file
-try {
-  // TODO: make configurable?
-  const configPath = resolve(process.cwd(), './postcss.config');
-  let configFile = require(configPath);
 
-  // Update configdir
-  CONFIGDIR = dirname(configPath);
+function configure() {
+  // Throws if no config file
+  try {
+    // TODO: make configurable?
+    const configPath = resolve(process.cwd(), './postcss.config');
+    let configFile = require(configPath);
 
-  console.log(`[postcss-generate] Config file detected at ${CONFIGDIR}`);
+    // Update configdir
+    CONFIGDIR = dirname(configPath);
 
-  // Function callback
-  if (typeof configFile === 'function') {
-    CONFIG = configFile.call(null, {
-      options: {}
-    });
+    if (DEBUG) console.log(`[postcss-generate] Config file detected at ${CONFIGDIR}`);
 
-  // Config object
-  } else if (typeof configFile === 'object') {
-    CONFIG = configFile;
+    // Function callback
+    if (typeof configFile === 'function') {
+      CONFIG = configFile.call(null, {
+        options: {}
+      });
 
-  // Invalid config file
-  } else {
-    throw(new Error('Invalid config file!'));
+    // Config object
+    } else if (typeof configFile === 'object') {
+      CONFIG = configFile;
+
+    // Invalid config file
+    } else {
+      throw(new Error('Invalid config file!'));
+    }
+  }
+  catch(e) {
+    console.error(e.message);
+    console.error('Make sure you configure postcss-generate first!');
+    console.error('Check the docs to see how to use the "generate" property of postcss.config.js!');
+    process.exit(1);
   }
 }
-catch(e) {
-  console.error(e.message);
-  console.error('Make sure you configure postcss-generate first!');
-  console.error('Check the docs to see how to use the "generate" property of postcss.config.js!');
-  process.exit(1);
-}
-
 
 function mkProcessOpts(src) {
   return ({
@@ -133,12 +144,33 @@ module.exports = {
     return CONFIG;
   },
   async run() {
+    configure();
+
+    // If minification is enabled, load cssnano
+    if (MINIFY) {
+      CONFIG.plugins.push(
+        require('cssnano')({
+          preset: 'default',
+        })
+      );
+    } else {
+      console.log(`[postcss-generate] Generating unminified CSS...`);
+    }
+
     // Create a processor by using the plugins from the config file
-    const processor = postcss(CONFIG.plugins);
+    const plugins = CONFIG.plugins.map(
+      p => typeof p == 'string' ? require(p) : p
+    );
+
+    const processor = postcss(plugins);
+
+    const sources = await globby(CONFIG.generate.from);
+
+    if (DEBUG) console.log(`[postcss-generate] Matched sources:\n* `+sources.join('\n* '));
 
     // Process source files
     let results = await Promise.all(
-      CONFIG.generate.from.map(
+      sources.map(
         sourceFile => transform(processor, sourceFile)
       )
     );
